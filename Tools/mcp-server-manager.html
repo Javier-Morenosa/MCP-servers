@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestor de Servidores MCP</title>
+    <style>
+        :root {
+            --primary-color: #4a6baf;
+            --secondary-color: #283b66;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --light-bg: #f8f9fa;
+            --dark-bg: #343a40;
+            --border-color: #dee2e6;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+        
+        h1 {
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        
+        .buttons-container {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+        
+        button, .file-input-label {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease-in-out;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        button.primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        button.primary:hover {
+            background-color: var(--secondary-color);
+        }
+        
+        button.success {
+            background-color: var(--success-color);
+            color: white;
+        }
+        
+        button.success:hover {
+            background-color: #218838;
+        }
+        
+        .file-input-label {
+            background-color: var(--dark-bg);
+            color: white;
+        }
+        
+        .file-input-label:hover {
+            background-color: #23272b;
+        }
+        
+        #fileInput {
+            display: none;
+        }
+        
+        .card {
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.2s ease-in-out;
+        }
+        
+        .card:hover {
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .server-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin: 0;
+        }
+        
+        /* Toggle switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        
+        .switch input { 
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: var(--success-color);
+        }
+        
+        input:focus + .slider {
+            box-shadow: 0 0 1px var(--success-color);
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        
+        .server-details {
+            background-color: var(--light-bg);
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 10px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        
+        .detail-row {
+            display: flex;
+            margin-bottom: 5px;
+        }
+        
+        .detail-label {
+            min-width: 100px;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            display: none;
+        }
+        
+        .success-status {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .error-status {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .env-var {
+            display: flex;
+            margin-top: 5px;
+            background-color: #e9ecef;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        
+        .env-key {
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        
+        .args-list {
+            list-style-type: none;
+            padding-left: 0;
+            margin: 0;
+        }
+        
+        .args-list li {
+            margin-bottom: 4px;
+            padding: 3px 6px;
+            background-color: #e9ecef;
+            border-radius: 3px;
+            display: inline-block;
+            margin-right: 5px;
+        }
+        
+        .collapsible {
+            cursor: pointer;
+        }
+        
+        .collapsible:after {
+            content: '\002B';
+            color: var(--primary-color);
+            font-weight: bold;
+            float: right;
+            margin-left: 5px;
+        }
+        
+        .active:after {
+            content: "\2212";
+        }
+        
+        .content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.2s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Gestor de Servidores MCP</h1>
+        
+        <div class="buttons-container">
+            <div class="button-group">
+                <label for="fileInput" class="file-input-label">
+                    <span>Cargar Configuración</span>
+                </label>
+                <input type="file" id="fileInput" accept=".json">
+                <button id="saveAllBtn" class="primary">Guardar Cambios</button>
+            </div>
+            <div class="button-group">
+                <button id="enableAllBtn" class="success">Activar Todos</button>
+                <button id="disableAllBtn" class="danger">Desactivar Todos</button>
+            </div>
+        </div>
+        
+        <div id="serverList">
+            <!-- Los servidores se cargarán aquí -->
+        </div>
+        
+        <div id="status" class="status"></div>
+    </div>
+
+    <script>
+        // Variables globales
+        let configData = null;
+        let activeServers = {};
+        const defaultConfigPath = "C:\\Users\\Javier\\AppData\\Roaming\\Claude\\claude_desktop_config.json";
+        
+        // Referencias a elementos del DOM
+        const fileInput = document.getElementById('fileInput');
+        const saveAllBtn = document.getElementById('saveAllBtn');
+        const enableAllBtn = document.getElementById('enableAllBtn');
+        const disableAllBtn = document.getElementById('disableAllBtn');
+        const serverList = document.getElementById('serverList');
+        const statusDiv = document.getElementById('status');
+        
+        // Cargar configuración predeterminada al cargar la página
+        document.addEventListener('DOMContentLoaded', async function() {
+            const defaultConfig = {
+                "mcpServers": {
+                    "filesystem": {
+                        "command": "npx",
+                        "args": [
+                            "-y",
+                            "@modelcontextprotocol/server-filesystem",
+                            "C:\\Users\\Javier\\Desktop",
+                            "C:\\Users"
+                        ]
+                    },
+                    "mcp-installer": {
+                        "command": "npx",
+                        "args": [
+                            "@anaisbetts/mcp-installer"
+                        ]
+                    },
+                    "brave-search": {
+                        "command": "npx",
+                        "args": [
+                            "-y",
+                            "@modelcontextprotocol/server-brave-search"
+                        ],
+                        "env": {
+                            "BRAVE_API_KEY": "BSASthhU3oztkcotJPma5Y7WdXOy-5E"
+                        }
+                    },
+                    "file-organizer-agent": {
+                        "command": "node",
+                        "args": [
+                            "C:\\Users\\Javier\\Desktop\\FileOrganizerAgent\\index.js"
+                        ]
+                    }
+                }
+            };
+            
+            // Intentar cargar archivo automáticamente usando File System Access API
+            if ('showOpenFilePicker' in window) {
+                try {
+                    // Mostrar un diálogo para seleccionar el archivo de configuración
+                    const [fileHandle] = await window.showOpenFilePicker({
+                        types: [{
+                            description: 'Archivos JSON',
+                            accept: {'application/json': ['.json']}
+                        }],
+                        multiple: false
+                    });
+                    
+                    // Guardar el manejador de archivo para usarlo al guardar cambios
+                    window.fileHandle = fileHandle;
+                    
+                    // Leer el archivo
+                    const file = await fileHandle.getFile();
+                    const text = await file.text();
+                    
+                    try {
+                        configData = JSON.parse(text);
+                        
+                        // Verificar si tiene la estructura esperada
+                        if (!configData.mcpServers) {
+                            throw new Error("El archivo no tiene la estructura de configuración esperada (mcpServers)");
+                        }
+                        
+                        // Reiniciar activeServers
+                        activeServers = {};
+                        for (const server in configData.mcpServers) {
+                            activeServers[server] = true;
+                        }
+                        
+                        renderServerList();
+                        showStatus("Archivo de configuración cargado correctamente", "success");
+                        return;
+                    } catch (parseError) {
+                        console.error("Error al parsear el archivo JSON:", parseError);
+                        showStatus("Error al parsear el archivo JSON: " + parseError.message, "error");
+                    }
+                } catch (fileError) {
+                    console.info("No se seleccionó ningún archivo, usando configuración predeterminada");
+                    // Si el usuario cancela la selección o hay algún error, usamos la configuración predeterminada
+                }
+            }
+            
+            // Si no se pudo cargar un archivo, usamos la configuración predeterminada
+            configData = defaultConfig;
+            // Por defecto, todos los servidores están activados
+            for (const server in configData.mcpServers) {
+                activeServers[server] = true;
+            }
+            renderServerList();
+            
+            showStatus("Configuración cargada desde valores predeterminados", "success");
+        });
+        
+        // Evento para cargar archivo de configuración
+        fileInput.addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            // Limpiar fileHandle para que no intente sobrescribir el archivo anterior
+            window.fileHandle = null;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    configData = JSON.parse(e.target.result);
+                    
+                    // Verificar si tiene la estructura esperada
+                    if (!configData.mcpServers) {
+                        throw new Error("El archivo no tiene la estructura de configuración esperada (mcpServers)");
+                    }
+                    
+                    // Reiniciar activeServers
+                    activeServers = {};
+                    for (const server in configData.mcpServers) {
+                        activeServers[server] = true;
+                    }
+                    
+                    renderServerList();
+                    showStatus("Archivo de configuración cargado correctamente. Al guardar, se te pedirá dónde almacenar los cambios.", "success");
+                } catch (error) {
+                    showStatus("Error al parsear el archivo JSON: " + error.message, "error");
+                }
+            };
+            
+            reader.onerror = function() {
+                showStatus("Error al leer el archivo", "error");
+            };
+            
+            reader.readAsText(file);
+        });
+        
+        // Evento para guardar todos los cambios
+        saveAllBtn.addEventListener('click', async function() {
+            if (!configData) {
+                showStatus("No hay configuración para guardar", "error");
+                return;
+            }
+            
+            // Crear una copia de la configuración
+            const newConfig = JSON.parse(JSON.stringify(configData));
+            
+            // Filtrar solo los servidores activos
+            const filteredServers = {};
+            for (const server in activeServers) {
+                if (activeServers[server] && configData.mcpServers[server]) {
+                    filteredServers[server] = configData.mcpServers[server];
+                }
+            }
+            
+            newConfig.mcpServers = filteredServers;
+            const jsonString = JSON.stringify(newConfig, null, 2);
+            
+            // Método 1: Intentar guardar directamente usando File System Access API
+            if ('showSaveFilePicker' in window) {
+                try {
+                    // Si ya tenemos un manejador de archivo activo, usarlo
+                    if (window.fileHandle) {
+                        const writableStream = await window.fileHandle.createWritable();
+                        await writableStream.write(jsonString);
+                        await writableStream.close();
+                        showStatus("Configuración guardada directamente en el archivo original", "success");
+                        return;
+                    }
+                    
+                    // Si no tenemos un manejador de archivo, pedir al usuario que seleccione
+                    const options = {
+                        suggestedName: "claude_desktop_config.json",
+                        types: [{
+                            description: 'Archivos JSON',
+                            accept: {'application/json': ['.json']}
+                        }],
+                    };
+                    
+                    window.fileHandle = await window.showSaveFilePicker(options);
+                    const writableStream = await window.fileHandle.createWritable();
+                    await writableStream.write(jsonString);
+                    await writableStream.close();
+                    
+                    showStatus("Configuración guardada correctamente", "success");
+                } catch (err) {
+                    console.error("Error al guardar el archivo:", err);
+                    // Si falla, caemos en el método tradicional
+                    saveUsingTraditionalMethod(jsonString);
+                }
+            } else {
+                // Método 2: Método tradicional de descarga si la API no está disponible
+                saveUsingTraditionalMethod(jsonString);
+            }
+        });
+        
+        // Función para guardar usando el método tradicional
+        function saveUsingTraditionalMethod(jsonString) {
+            // Crear el Blob con el JSON
+            const blob = new Blob([jsonString], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            
+            // Crear enlace de descarga
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "claude_desktop_config.json";
+            document.body.appendChild(a);
+            a.click();
+            
+            // Limpiar
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showStatus("Tu navegador no soporta guardado directo. El archivo se ha descargado. " +
+                       "Colócalo manualmente en la ruta: " + defaultConfigPath, "success");
+        }
+        
+        // Eventos para activar/desactivar todos los servidores
+        enableAllBtn.addEventListener('click', function() {
+            if (!configData) return;
+            
+            for (const server in configData.mcpServers) {
+                activeServers[server] = true;
+            }
+            
+            renderServerList();
+            showStatus("Todos los servidores activados", "success");
+        });
+        
+        disableAllBtn.addEventListener('click', function() {
+            if (!configData) return;
+            
+            for (const server in configData.mcpServers) {
+                activeServers[server] = false;
+            }
+            
+            renderServerList();
+            showStatus("Todos los servidores desactivados", "success");
+        });
+        
+        // Función para renderizar la lista de servidores
+        function renderServerList() {
+            if (!configData || !configData.mcpServers) {
+                serverList.innerHTML = "<p>No hay configuración disponible</p>";
+                return;
+            }
+            
+            serverList.innerHTML = "";
+            
+            for (const server in configData.mcpServers) {
+                const serverData = configData.mcpServers[server];
+                
+                // Crear tarjeta de servidor
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div class="card-header">
+                        <h3 class="server-name">${server}</h3>
+                        <label class="switch">
+                            <input type="checkbox" id="toggle-${server}" ${activeServers[server] ? 'checked' : ''}>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Comando:</span>
+                        <span>${serverData.command}</span>
+                    </div>
+                    <div class="detail-row collapsible">
+                        <span class="detail-label">Ver Detalles</span>
+                    </div>
+                    <div class="content">
+                        <div class="server-details">
+                            <div class="detail-row">
+                                <span class="detail-label">Argumentos:</span>
+                            </div>
+                            <ul class="args-list">
+                                ${serverData.args.map(arg => `<li>${arg}</li>`).join('')}
+                            </ul>
+                            
+                            ${serverData.env ? `
+                            <div class="detail-row" style="margin-top: 10px;">
+                                <span class="detail-label">Variables:</span>
+                            </div>
+                            ${Object.entries(serverData.env).map(([key, value]) => `
+                                <div class="env-var">
+                                    <span class="env-key">${key}:</span>
+                                    <span>${value}</span>
+                                </div>
+                            `).join('')}
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+                
+                serverList.appendChild(card);
+                
+                // Agregar evento para el toggle
+                const toggle = card.querySelector(`#toggle-${server}`);
+                toggle.addEventListener('change', function(e) {
+                    activeServers[server] = e.target.checked;
+                });
+                
+                // Agregar evento para colapsar/expandir detalles
+                const coll = card.querySelector(".collapsible");
+                coll.addEventListener("click", function() {
+                    this.classList.toggle("active");
+                    const content = this.nextElementSibling;
+                    if (content.style.maxHeight) {
+                        content.style.maxHeight = null;
+                    } else {
+                        content.style.maxHeight = content.scrollHeight + "px";
+                    }
+                });
+            }
+        }
+        
+        // Función para mostrar mensajes de estado
+        function showStatus(message, type) {
+            statusDiv.textContent = message;
+            statusDiv.className = "status";
+            statusDiv.classList.add(type === "success" ? "success-status" : "error-status");
+            statusDiv.style.display = "block";
+            
+            // Ocultar después de 8 segundos
+            setTimeout(() => {
+                statusDiv.style.display = "none";
+            }, 8000);
+        }
+    </script>
+</body>
+</html>
